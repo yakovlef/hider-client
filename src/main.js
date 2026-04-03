@@ -111,4 +111,8 @@ app.whenReady().then(() => {
   registerShortcuts();
 });
 
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
+});
+
 app.on('window-all-closed', () => app.quit());

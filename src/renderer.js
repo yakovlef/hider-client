@@ -14,7 +14,10 @@
 
   let ws = null;
   let role = null;
+  let addr = null;
   let debounceTimer = null;
+  let reconnectTimer = null;
+  let connected = false;
 
   connectBtn.addEventListener('click', connect);
   serverInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') connect(); });
@@ -24,19 +27,23 @@
   document.getElementById('close-btn-work').addEventListener('click', () => window.hider.closeWindow());
 
   function connect() {
-    const addr = serverInput.value.trim();
+    addr = addr || serverInput.value.trim();
     if (!addr) return;
 
-    role = roleSelect.value;
+    role = role || roleSelect.value;
     connectBtn.disabled = true;
     connectStatus.textContent = 'Подключение...';
     connectStatus.style.color = '#999';
 
-    const url = `ws://${addr}`;
-    ws = new WebSocket(url);
+    if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+
+    ws = new WebSocket(`ws://${addr}`);
 
     ws.onopen = () => {
       ws.send(JSON.stringify({ type: 'join', role }));
+      connected = true;
+      statusDot.classList.remove('offline');
+      statusText.textContent = 'Подключено';
       showWorkScreen();
     };
 
@@ -58,14 +65,27 @@
 
     ws.onclose = () => {
       statusDot.classList.add('offline');
-      statusText.textContent = 'Отключено';
+      statusText.textContent = 'Переподключение...';
+      scheduleReconnect();
     };
 
     ws.onerror = () => {
-      connectBtn.disabled = false;
-      connectStatus.textContent = 'Ошибка подключения';
-      connectStatus.style.color = '#ef4444';
+      if (!connected) {
+        connectBtn.disabled = false;
+        connectStatus.textContent = 'Ошибка подключения';
+        connectStatus.style.color = '#ef4444';
+        addr = null;
+        role = null;
+      }
     };
+  }
+
+  function scheduleReconnect() {
+    if (reconnectTimer) return;
+    reconnectTimer = setTimeout(() => {
+      reconnectTimer = null;
+      connect();
+    }, 3000);
   }
 
   function showWorkScreen() {
