@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src ws: wss:; style-src 'self' 'unsafe-inline'">
+  <title>Hider</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      color: #f0f0f0;
+      -webkit-app-region: drag;
+      user-select: none;
+    }
+
+    input, textarea, button, select { -webkit-app-region: no-drag; }
+
+    /* ── Connect Screen ── */
+    #connect-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      background: rgba(10, 10, 10, 0.92);
+      border-radius: 12px;
+      border: 1px solid #333;
+      padding: 32px;
+      gap: 16px;
+    }
+
+    #connect-screen h1 {
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: 280px;
+    }
+
+    .input-group label {
+      font-size: 12px;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .input-group input, .input-group select {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 10px 12px;
+      color: #f0f0f0;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .input-group input:focus, .input-group select:focus {
+      border-color: #3b82f6;
+    }
+
+    .input-group select {
+      cursor: pointer;
+    }
+
+    #connect-btn {
+      margin-top: 8px;
+      padding: 10px 32px;
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    #connect-btn:hover { background: #2563eb; }
+    #connect-btn:disabled { background: #555; cursor: not-allowed; }
+
+    #connect-status {
+      font-size: 12px;
+      color: #999;
+      min-height: 18px;
+    }
+
+    /* ── Work Screen (shared) ── */
+    #work-screen {
+      display: none;
+      flex-direction: column;
+      height: 100%;
+      background: rgba(10, 10, 10, 0.88);
+      border-radius: 12px;
+      border: 1px solid #333;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 12px;
+      background: rgba(20, 20, 20, 0.95);
+      border-bottom: 1px solid #222;
+      border-radius: 12px 12px 0 0;
+      font-size: 12px;
+      color: #777;
+    }
+
+    .toolbar .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+      margin-right: 6px;
+    }
+
+    .toolbar .status-dot.offline { background: #ef4444; }
+
+    /* ── Editor Mode ── */
+    #editor-area {
+      flex: 1;
+      display: none;
+    }
+
+    #editor-area textarea {
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      border: none;
+      color: #f0f0f0;
+      font-size: 14px;
+      font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+      line-height: 1.6;
+      padding: 12px;
+      resize: none;
+      outline: none;
+    }
+
+    /* ── Reader Mode ── */
+    #reader-area {
+      flex: 1;
+      display: none;
+      padding: 12px;
+      overflow-y: auto;
+      font-size: 14px;
+      font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .empty-state {
+      color: #555;
+      font-style: italic;
+    }
+
+    /* Shortcuts hint */
+    .shortcuts-hint {
+      font-size: 11px;
+      color: #555;
+      text-align: center;
+      padding: 4px;
+      border-top: 1px solid #222;
+    }
+
+    /* Close button */
+    .close-btn {
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      width: 24px;
+      height: 24px;
+      background: none;
+      border: none;
+      color: #555;
+      font-size: 18px;
+      line-height: 24px;
+      text-align: center;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background 0.15s, color 0.15s;
+      z-index: 100;
+    }
+    .close-btn:hover { background: #ef4444; color: #fff; }
+  </style>
+</head>
+<body>
+
+  <!-- Connect Screen -->
+  <div id="connect-screen">
+    <button class="close-btn" id="close-btn-connect">&times;</button>
+    <h1>HIDER</h1>
+
+    <div class="input-group">
+      <label>Сервер</label>
+      <input type="text" id="server-input" placeholder="IP:порт (напр. 123.45.67.89:9999)" value="localhost:9999">
+    </div>
+
+    <div class="input-group">
+      <label>Режим</label>
+      <select id="role-select">
+        <option value="editor">Редактор</option>
+        <option value="reader">Читатель</option>
+      </select>
+    </div>
+
+    <button id="connect-btn">Подключиться</button>
+    <div id="connect-status"></div>
+  </div>
+
+  <!-- Work Screen -->
+  <div id="work-screen">
+    <div class="toolbar">
+      <div>
+        <span class="status-dot" id="status-dot"></span>
+        <span id="status-text">Подключено</span>
+      </div>
+      <div id="peers-info"></div>
+      <button class="close-btn" id="close-btn-work" style="position:static; width:20px; height:20px; font-size:16px; line-height:20px;">&times;</button>
+    </div>
+
+    <div id="editor-area">
+      <textarea id="editor-textarea" placeholder="Пиши сюда..."></textarea>
+    </div>
+
+    <div id="reader-area">
+      <span class="empty-state">Ожидание текста от редактора...</span>
+    </div>
+
+    <div class="shortcuts-hint">
+      Cmd+\ скрыть/показать &nbsp;│&nbsp; Alt+стрелки двигать &nbsp;│&nbsp; Cmd+Shift+E выход
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
