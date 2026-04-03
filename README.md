@@ -5,8 +5,7 @@
 ## Запуск
 
 ```bash
-npm install
-npm start
+npm run go
 ```
 
 ## Использование

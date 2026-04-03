@@ -5,6 +5,7 @@
   "description": "Invisible relay chat client",
   "main": "src/main.js",
   "scripts": {
+    "go": "npm install && electron-forge start",
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make"

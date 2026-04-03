@@ -12,6 +12,7 @@
   const editorTextarea = document.getElementById('editor-textarea');
   const readerArea = document.getElementById('reader-area');
 
+  const TOKEN = 'hdr-x7k9m2';
   let ws = null;
   let role = null;
   let addr = null;
@@ -40,7 +41,7 @@
     ws = new WebSocket(`ws://${addr}`);
 
     ws.onopen = () => {
-      ws.send(JSON.stringify({ type: 'join', role }));
+      ws.send(JSON.stringify({ type: 'join', role, token: TOKEN }));
       connected = true;
       statusDot.classList.remove('offline');
       statusText.textContent = 'Подключено';
